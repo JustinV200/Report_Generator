@@ -101,7 +101,7 @@ report_generator/
 ```
 
 ## Roadmap
-- [ ] **Cleaner accurate reports** - cleanup reports, better prompts for the llm to follow in report making
+- [ ] **Cleanup reports** - cleanup reports, better more detailed prompts
 - [ ] **Multiple source support** — Accept a list of URLs/files, parse and chunk each, merge all chunks before extraction to produce a single unified report from multiple sources.
 - [ ] **Report size tiers** — `brief`, `standard`, and `detailed` modes that control how much content the report writer generates (summary-only vs. full analysis with deep-dives).
 - [ ] **Research mode** — Given a topic, automatically search the web for relevant sources, rank them, and feed the best ones into the pipeline. Turns the tool into an autonomous research assistant.
