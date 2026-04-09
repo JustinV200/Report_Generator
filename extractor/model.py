@@ -52,3 +52,10 @@ class Model:
             response_format={"type": "json_object"}
         )
         return json.loads(response.choices[0].message.content)
+    
+    def call_raw(self, prompt):
+        response = completion(
+            model=self.model_name,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
