@@ -5,13 +5,19 @@ def webParser(file_path):
         raw_html = f.read()
     text = trafilatura.extract(raw_html)
     metadata = trafilatura.bare_extraction(raw_html)
+    
+    if metadata:
+        meta_dict = {
+            "title": getattr(metadata, "title", "") or "",
+            "author": getattr(metadata, "author", "") or "",
+            "date": getattr(metadata, "date", "") or "",
+            "sitename": getattr(metadata, "sitename", "") or "",
+        }
+    else:
+        meta_dict = {}
+
     return {
         "text": text,
         "tables": [],
-        "metadata": {
-            "title": metadata.get("title", ""),
-            "author": metadata.get("author", ""),
-            "date": metadata.get("date", ""),
-            "sitename": metadata.get("sitename", ""),
-        } if metadata else {}
+        "metadata": meta_dict
     }

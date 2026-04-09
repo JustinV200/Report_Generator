@@ -8,3 +8,18 @@ dist/
 build/
 .idea/
 .vscode/
+
+# Generated reports
+reports/*.html
+reports/*.pdf
+reports/*.docx
+reports/*_files/
+reports/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Temp/misc
+*.tmp
+*.log

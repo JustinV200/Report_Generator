@@ -4,13 +4,18 @@ Return ONLY valid JSON in this exact format:
 {
     "entities": ["list of key entities, organizations, people mentioned"],
     "statistics": [
-        {"metric": "name", "value": 0, "unit": "unit", "context": "where/how it was mentioned"}
+        {"metric": "name", "value": 0, "unit": "unit", "context": "full date with year, source, and what the number specifically measures"}
     ],
     "claims": [
         {"statement": "a key claim made", "evidence_quote": "supporting quote from text"}
     ],
     "summary": "2-3 sentence summary of this content"
 }
+
+RULES:
+- Always include the FULL YEAR in any date (e.g. "September 6, 2021" not "week of Sep 6th")
+- Be specific about what each metric measures — include who, what, where, when
+- If the source is vague about a date or metric, note that in the context field
 
 Content:
 """
