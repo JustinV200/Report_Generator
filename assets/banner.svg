@@ -11,16 +11,24 @@
       <animate attributeName="x1" values="-100%;100%" dur="3s" repeatCount="indefinite"/>
       <animate attributeName="x2" values="0%;200%" dur="3s" repeatCount="indefinite"/>
     </linearGradient>
-    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#dc3545;stop-opacity:0"/>
-      <stop offset="50%" style="stop-color:#8b0000;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#dc3545;stop-opacity:0"/>
-      <animate attributeName="x1" values="-50%;100%" dur="2.5s" repeatCount="indefinite"/>
-      <animate attributeName="x2" values="0%;150%" dur="2.5s" repeatCount="indefinite"/>
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#dc3545;stop-opacity:0.1"/>
+      <stop offset="50%" style="stop-color:#dc3545;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#dc3545;stop-opacity:0.1"/>
+      <animate attributeName="x1" values="-50%;100%" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="x2" values="0%;150%" dur="2s" repeatCount="indefinite"/>
     </linearGradient>
     <filter id="glow">
       <feGaussianBlur stdDeviation="3" result="blur"/>
       <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
@@ -30,8 +38,40 @@
   <!-- Background -->
   <rect width="800" height="200" rx="12" fill="url(#bgGrad)"/>
 
-  <!-- Accent line top -->
-  <rect x="100" y="38" width="600" height="1.5" fill="url(#lineGrad)" rx="1"/>
+  <!-- Heartbeat EKG line behind text -->
+  <polyline
+    points="0,100 80,100 120,100 150,100 170,98 180,100 200,100 240,100 260,100 280,102 290,100 310,70 320,130 330,50 340,150 350,80 360,100 380,100 400,100 420,100 440,100 460,98 470,100 490,100 510,70 520,130 530,50 540,150 550,80 560,100 580,100 620,100 650,100 670,102 680,100 700,100 740,100 800,100"
+    fill="none"
+    stroke="url(#pulseGrad)"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    filter="url(#softGlow)"
+    opacity="0.5"
+  >
+    <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" repeatCount="indefinite"/>
+  </polyline>
+
+  <!-- Second faint heartbeat offset for depth -->
+  <polyline
+    points="0,100 80,100 120,100 150,100 170,98 180,100 200,100 240,100 260,100 280,102 290,100 310,70 320,130 330,50 340,150 350,80 360,100 380,100 400,100 420,100 440,100 460,98 470,100 490,100 510,70 520,130 530,50 540,150 550,80 560,100 580,100 620,100 650,100 670,102 680,100 700,100 740,100 800,100"
+    fill="none"
+    stroke="#8b0000"
+    stroke-width="1"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.15"
+    transform="translate(15, 3)"
+  />
+
+  <!-- Scanning dot that follows the heartbeat -->
+  <circle r="4" fill="#dc3545" filter="url(#softGlow)" opacity="0.8">
+    <animateMotion
+      path="M0,100 L80,100 120,100 150,100 170,98 180,100 200,100 240,100 260,100 280,102 290,100 310,70 320,130 330,50 340,150 350,80 360,100 380,100 400,100 420,100 440,100 460,98 470,100 490,100 510,70 520,130 530,50 540,150 550,80 560,100 580,100 620,100 650,100 670,102 680,100 700,100 740,100 800,100"
+      dur="4s"
+      repeatCount="indefinite"
+    />
+  </circle>
 
   <!-- Main title -->
   <text x="400" y="110" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="url(#textGrad)" filter="url(#glow)" letter-spacing="8">
@@ -42,9 +82,6 @@
   <text x="400" y="145" text-anchor="middle" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="16" fill="#8b949e" letter-spacing="4">
     AI-POWERED REPORT GENERATOR
   </text>
-
-  <!-- Accent line bottom -->
-  <rect x="100" y="162" width="600" height="1.5" fill="url(#lineGrad)" rx="1"/>
 
   <!-- Small decorative dots -->
   <circle cx="80" cy="100" r="2" fill="#dc3545" opacity="0.4">
