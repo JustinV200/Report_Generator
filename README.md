@@ -1,18 +1,38 @@
-# ReGen: AI powered report generator
+<p align="center">
+  <img src="assets/banner.svg" alt="ReGen" width="800"/>
+</p>
 
-An automated pipeline that ingests documents or web pages, extracts structured data using LLMs, and generates polished statistical reports rendered with [Quarto](https://quarto.org).
+<p align="center">
+  <em>Ingest documents. Extract intelligence. Generate reports.</em>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.10+-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/LLM-GPT--3.5--turbo-412991?style=flat-square&logo=openai&logoColor=white" alt="LLM"/>
+  <img src="https://img.shields.io/badge/render-Quarto-75AADB?style=flat-square" alt="Quarto"/>
+</p>
+
+---
+
+An automated pipeline that ingests documents or web pages, extracts structured data using LLMs, analyzes cross-source patterns, and generates polished reports rendered with [Quarto](https://quarto.org).
 
 ## How It Works
 
 ```
-Source (URL or file) → Parse → Chunk → LLM Extract (map-reduce) → LLM Report Writer → Quarto .qmd → HTML/PDF/DOCX
+Sources (URLs/files)
+  → Parse → Chunk
+  → LLM Extract (map-reduce)
+  → LLM Analyze (per-source + clustering + cross-source synthesis)
+  → LLM Report Writer (section-by-section)
+  → Quarto .qmd → HTML/PDF/DOCX
 ```
 
-1. **Input Ingestion** — Detects whether the source is a URL or local file, downloads if needed, identifies the file type, and dispatches to the appropriate parser.
-2. **Chunking** — Splits parsed text into overlapping chunks sized for LLM context windows. Tables are kept as separate chunks.
-3. **Extraction (Map-Reduce)** — Each chunk is sent to an LLM for structured data extraction (entities, statistics, claims). Results are recursively consolidated into a single JSON extraction.
-4. **Report Generation** — A second LLM call transforms the extraction JSON into a complete Quarto `.qmd` report with narrative sections, tables, and executable Python visualizations.
-5. **Rendering** — Quarto compiles the `.qmd` into HTML (or PDF/DOCX).
+1. **Input Ingestion** — Detects whether each source is a URL or local file, downloads if needed, identifies the file type, and dispatches to the appropriate parser.
+2. **Chunking** — Splits parsed text into overlapping chunks sized for LLM context windows. Tables are kept as separate chunks. Handles paragraph-less documents with newline/word-split fallbacks.
+3. **Extraction (Map-Reduce)** — Each chunk is sent to an LLM for structured data extraction (entities, statistics, claims). Results are batch-reduced into a single JSON extraction per source.
+4. **Analysis & Synthesis** — Per-source deep analysis, source clustering by topic similarity, and cross-source synthesis that identifies themes, connections, contradictions, and key takeaways.
+5. **Report Generation** — Section-by-section LLM calls build a complete Quarto `.qmd` with narrative prose, charts (matplotlib/seaborn), and data-driven visualizations.
+6. **Rendering** — Quarto compiles the `.qmd` into a self-contained HTML file (or PDF/DOCX). Embedded resources — no extra folders needed.
 
 ## Supported Input Formats
 
@@ -54,12 +74,22 @@ $env:QUARTO_PYTHON = "C:\path\to\python.exe"
 
 ## Usage
 
-1. Open `Main.py` and set the `source` variable to a URL or local file path:
+1. Open `Main.py` and set your sources and mode:
 
 ```python
-source = "https://example.com/article"   # URL
-source = "data/report.pdf"               # local file
+sources = [
+    "https://example.com/article",
+    "https://example.com/report",
+    "data/study.pdf",
+]
+mode = "standard"  # "brief", "standard", or "detailed"
 ```
+
+| Mode | Description |
+|---|---|
+| `brief` | Quick summary, minimal sections, single-call generation |
+| `standard` | Themes, cross-source findings, clusters — section-by-section |
+| `detailed` | Everything in standard + per-source deep-dives, more themes/takeaways |
 
 2. Run the pipeline:
 
@@ -73,13 +103,13 @@ python Main.py
 quarto render reports/report.qmd
 ```
 
-The rendered HTML will appear in the same directory.
+The rendered HTML is fully self-contained — open it on any machine, no extra files needed.
 
 ## Project Structure
 
 ```
 report_generator/
-├── Main.py                          # Pipeline entry point
+├── Main.py                          # Pipeline orchestrator + mode config
 ├── input_processing/
 │   ├── reader.py                    # Source detection, download, MIME routing
 │   ├── chunker.py                   # Paragraph-based chunking with overlap
@@ -93,16 +123,22 @@ report_generator/
 ├── extractor/
 │   ├── model.py                     # LLM wrapper (litellm, provider-agnostic)
 │   └── extractor.py                 # Map-reduce extraction pipeline
+├── analyzer/
+│   └── analyzer.py                  # Per-source analysis, clustering, synthesis
 ├── reportgenerator/
-│   └── reportMaker.py               # Quarto .qmd generation from extraction JSON
+│   └── reportMaker.py               # Section-by-section Quarto .qmd generation
 ├── reports/                         # Generated reports output directory
+├── assets/                          # README banner and other assets
 ├── requirements.txt
 └── .env                             # API keys (not committed)
 ```
 
 ## Roadmap
-- [x] **Cleanup reports** - cleanup reports, better more detailed prompts
-- [x] **Multiple source support** — Accept a list of URLs/files, parse and chunk each, merge all chunks before extraction to produce a single unified report from multiple sources.
-- [x] **Report size tiers** — `brief`, `standard`, and `detailed` modes that control how much content the report writer generates (summary-only vs. full analysis with deep-dives).
-- [ ] **Research mode** — Given a topic, automatically search the web for relevant sources, rank them, and feed the best ones into the pipeline. Turns the tool into an autonomous research assistant.
-- [ ] **Local fine-tuned models** — Swap out cloud LLMs for locally-hosted models fine-tuned on domain-specific extraction and report writing tasks. Reduces cost, improves privacy, and allows offline use.
+- [x] Multi-source support — accept a list of URLs/files, extract each independently, synthesize across all
+- [x] Report modes — `brief`, `standard`, `detailed` with scaling themes, takeaways, and section depth
+- [x] Analyzer layer — per-source analysis, topic clustering, cross-source synthesis
+- [x] Section-by-section generation — avoids LLM output token limits on longer reports
+- [x] Self-contained HTML — `embed-resources` for portable single-file reports
+- [ ] **Research mode** — given a topic, auto-search the web for relevant sources and feed the best ones into the pipeline
+- [ ] **Local fine-tuned models** — swap cloud LLMs for locally-hosted models for cost, privacy, and offline use
+- [ ] **CLI interface** — command-line arguments for sources, mode, output format
