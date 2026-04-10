@@ -1,0 +1,90 @@
+---
+title: "Global Insights on COVID-19 Impact and Risk Factors"
+author: "ReGen"
+date: "2026-04-10"
+format:
+  html:
+    theme: darkly
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+---
+
+
+## Executive Summary
+
+The analysis of COVID-19 risk factors reveals a heightened vulnerability among individuals over 65, emphasizing the importance of managing underlying medical conditions for optimal health outcomes. The data underscores the critical role of vaccination and timely treatment in mitigating severe illness among this demographic group.
+
+Global disparities in the impact of COVID-19 based on income levels and regional interventions necessitate tailored healthcare strategies to address varying levels of vulnerability and support communities in combating the virus. These insights highlight the need for targeted interventions to reduce adverse outcomes and ensure equitable access to healthcare resources worldwide.
+
+## Themes
+### Age and Underlying Medical Conditions as Key Risk Factors
+
+```{python}
+import matplotlib.pyplot as plt
+
+labels = ['People over age 65', 'Other age groups']
+sizes = [81, 19]
+
+plt.figure(figsize=(8, 5))
+plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
+plt.axis('equal') 
+plt.title('COVID-19 Death Distribution by Age Group')
+plt.show()
+```
+
+The pie chart illustrates the stark disparity in COVID-19 death distribution, with individuals over 65 accounting for a significant 81% of fatalities. This data, sourced from the CDC COVID-19 Risk Factors Overview, underscores the heightened vulnerability of the elderly to severe illness and highlights the urgent need for protective measures in this age group. Additionally, the chart emphasizes the critical role age plays as a key risk factor for adverse outcomes in COVID-19 cases.
+
+### Global Disparities in COVID-19 Impact
+
+```{python}
+import matplotlib.pyplot as plt
+
+# Data for Geographical Comparison of Cumulative Infection Rates
+continents = ['Europe', 'Africa']
+infection_rates = [0.326, 0.011]
+
+plt.figure(figsize=(10, 6))
+plt.barh(continents, infection_rates, color='skyblue')
+plt.xlabel('Cumulative Infection Rates')
+plt.title('Geographical Comparison of Cumulative Infection Rates')
+plt.gca().invert_yaxis()
+plt.tight_layout()
+plt.show()
+```
+
+The chart illustrates a stark contrast in global COVID-19 impact between Europe and Africa, with Europe showing a significantly higher cumulative infection rate of 32.6% compared to Africa's much lower rate of 1.1%. This discrepancy underscores the profound disparities in COVID-19 spread between high-income and low-income regions, necessitating targeted interventions to address these inequalities.
+
+Frontiers in Public Health emphasizes the crucial need for tailored healthcare strategies based on income levels and regional disparities to mitigate the unequal impact of COVID-19 on different populations. Vaccination rates, closely correlated with income levels, play a pivotal role in determining mortality rates, highlighting the urgent call for equitable distribution of vaccines to ensure global health equity during the pandemic.
+
+### Prevalence and Impact of Long COVID
+
+- 5% of US adults experience Long COVID symptoms according to the Comprehensive Analysis of Long COVID and COVID-19 Risk Factors report. This data highlights the significant impact of the condition post-infection.
+- Vaccines have shown limited effectiveness against Long COVID in children, as indicated by the same report. This underscores the necessity for further research and preventive measures in this demographic.
+- Despite identified risk factors, the actual risk of post-COVID-19 conditions remains unknown, with the report indicating a gap in understanding the long-term effects of the disease.
+
+## Source Connections
+
+### CDC COVID-19 & Reinfection Insights
+Both sources from CDC provide insights on the risk factors associated with severe illness from COVID-19, highlighting the importance of vaccination, timely treatment, and preventive measures to reduce severe illness and reinfection.
+
+- Both sources emphasize the importance of timely treatment to reduce severe illness from COVID-19.
+- CDC COVID-19 Risk Factors Overview focuses on underlying medical conditions and age as key risk factors for severe illness, while CDC COVID-19 Reinfection Report discusses the risk of reinfection and the role of vaccination in preventing severe outcomes.
+
+### Global COVID-19 Trends Analysis
+The CDC source focuses on individual risk factors for severe illness, while the Global COVID-19 Impact and Trends Analysis provides a broader perspective on global trends, highlighting disparities in infection and mortality rates based on income levels and regional interventions.
+
+- Global COVID-19 Impact and Trends Analysis highlights the impact of income levels on infection and mortality rates, while the CDC source focuses on specific risk factors like age and underlying medical conditions.
+- Both sources emphasize the importance of tailored healthcare strategies to address disparities in COVID-19 outcomes.
+
+
+## Key Takeaways
+1. Elderly individuals over 65 are at a significantly higher risk of severe illness from COVID-19, constituting over 81% of all reported deaths. This highlights the critical need for targeted protective measures and vaccination efforts for this vulnerable population (CDC COVID-19 Risk Factors Overview).
+   
+2. Disparities in infection and mortality rates worldwide underscore the importance of tailored healthcare strategies based on income levels. Addressing these disparities is crucial in mitigating the impact of the pandemic on vulnerable populations and reducing overall public health risks (Global COVID-19 Impact and Trends Analysis).
+
+3. Approximately 5% of US adults experience Long COVID, characterized by persistent symptoms even after recovering from the initial illness. This prevalence emphasizes the necessity for further research and proactive measures to address the long-term health implications of COVID-19 on individuals (Comprehensive Analysis of Long COVID and COVID-19 Risk Factors).

@@ -33,7 +33,9 @@ execute:
 
 ## Executive Summary
 
-Expand the synthesis executive_summary into {exec_summary}. Each paragraph should be 4-5 sentences. Include specific numbers, dates, and entity names from the data. Do NOT write vague one-liners. Use the narrative_frame as the organizing lens for the summary.
+Expand the synthesis executive_summary into {exec_summary}. Each paragraph should be 3-4 sentences MAX. Include specific numbers, dates, and entity names from the data. Do NOT write vague one-liners. Use the narrative_frame as the organizing lens for the summary. Do NOT exceed the paragraph limit — be concise.
+
+CRITICAL: Only state what the data says. If the data says high-income countries have higher infection rates, write that — do NOT invert or "correct" findings based on assumptions. If a number is missing from the data, omit the claim rather than guessing.
 
 {per_source_section}
 
@@ -71,7 +73,8 @@ import seaborn as sns
 
 ## Key Takeaways
 
-Present synthesis.key_takeaways as a numbered list. Expand each takeaway into 2-3 sentences with specific data points and context. {section_depth}
+Present synthesis.key_takeaways as a numbered list. Expand each takeaway into 1-2 sentences with specific data points. {section_depth}
+- Restate insights in NEW words — do NOT copy sentences verbatim from earlier sections
 
 --RULES FOR WRITING THE REPORT (do not include these rules in the final report):
 CRITICAL FORMATTING RULES:
@@ -82,6 +85,11 @@ CRITICAL FORMATTING RULES:
 - Do NOT use plain text headers like "Executive Summary:" — always use ## markdown headers
 - Do NOT add analysis or interpretation beyond what the blueprint provides
 - Follow synthesis.narrative_order for the ordering of theme sections
+- NEVER output bracketed placeholders like [specific date], [specific year], [city name], etc. — if the exact value is not in the data, omit the phrase entirely rather than inserting a placeholder
+- NEVER fabricate, invent, or assume data that is not explicitly in the blueprint — if a number, date, or fact is missing, omit it entirely
+- NEVER invert or contradict what the data says — if the data says X is higher than Y, write exactly that
+- If you cannot state a claim with a specific number from the data, do NOT state it at all
+- Do NOT use false contrast words (e.g. "Contrarily", "However", "On the other hand") when findings are complementary, not contradictory — use "Additionally", "Furthermore", or "Separately" instead
 
 VISUALIZATION RULES:
 - Use the EXACT data_points from each visualization spec — do not invent data
@@ -115,8 +123,13 @@ RULES:
 - Use ```{{python}} for executable code blocks
 - Reference sources by their actual name, never as "Source 1" or "Source 2"
 - Do NOT use placeholder text — write real, detailed content
+- NEVER output bracketed placeholders like [specific date], [specific year], [city name], etc. — if the exact value is not in the data, omit the phrase entirely
 - ALWAYS prefer specific numbers, dates, and statistics over vague qualitative statements — if a data point exists, cite it
 - Do NOT pad with filler like "increasingly apparent" or "growing concern" — be concise and data-driven
+- NEVER fabricate, invent, or assume data not present in the provided JSON — if a number is missing, omit the claim
+- NEVER invert what the data says — report findings exactly as given, even if they seem counterintuitive
+- If you lack a specific number to complete a sentence, drop the sentence rather than leaving a bare unit like "%" or "weeks"
+- Do NOT use false contrast words (e.g. "Contrarily", "However") when findings are complementary — use "Additionally" or "Separately" instead
 - STOP writing when you run out of extracted data points — do NOT pad with generic advice, recommendations, or future outlook not tied to a specific statistic
 - When a visualization exists for this section, render the chart FIRST, then write 2-3 sentences interpreting what the chart shows. The chart is primary content, text supports it
 - When a section contains a list of discrete facts, statistics, or short points, use bullet points instead of forcing them into prose paragraphs. Use paragraphs for narrative analysis and bullet points for enumerating data
@@ -162,10 +175,10 @@ CLUSTER_SECTION = """## Source Connections
 
 For EACH item in synthesis.source_clusters, create a subsection:
 ### [cluster_name]
-- Explain the relationship between the sources in this cluster
-- Write each key_comparison_point as a full paragraph — {section_depth}
+- Open with 1-2 sentences explaining the relationship, then use bullet points for each key_comparison_point — {section_depth}
 - Reference the specific sources by name
 - Highlight agreements, disagreements, and complementary perspectives
+- STOP when out of comparison points — do NOT pad with general commentary
 """
 
 # Injected when cross-source findings are enabled (standard + detailed).

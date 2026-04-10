@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import date
 from prompts.report import (
     REPORT_PROMPT, SECTION_PROMPT,
@@ -16,54 +17,112 @@ class reportMaker:
         self.config = config or {}
 
     @staticmethod
-    def _matches_any_stat(value, all_stats):
-        """Check if a numeric value appears (within 1% tolerance) in the raw stats."""
+    def _extract_numbers(obj):
+        """Recursively extract all numeric values from a nested dict/list structure."""
+        nums = set()
+        if isinstance(obj, dict):
+            for v in obj.values():
+                nums.update(reportMaker._extract_numbers(v))
+        elif isinstance(obj, list):
+            for item in obj:
+                nums.update(reportMaker._extract_numbers(item))
+        elif isinstance(obj, (int, float)):
+            if obj != 0:
+                nums.add(float(obj))
+        elif isinstance(obj, str):
+            cleaned = obj.replace(",", "").replace("%", "").replace("$", "").strip()
+            try:
+                val = float(cleaned)
+                if val != 0:
+                    nums.add(val)
+            except (TypeError, ValueError):
+                pass
+        return nums
+
+    @staticmethod
+    def _matches_any_stat(value, all_stat_numbers):
+        """Check if a numeric value appears (within 1% tolerance) in the extracted numbers."""
         try:
             v = float(value)
         except (TypeError, ValueError):
             return False
         if v == 0:
             return False
-        for stat in all_stats:
-            for field in ("value", "amount", "number", "percentage", "rate"):
-                raw = stat.get(field)
-                if raw is None:
-                    continue
-                try:
-                    s = float(str(raw).replace(",", "").replace("%", "").replace("$", ""))
-                except (TypeError, ValueError):
-                    continue
-                if s != 0 and abs(v - s) / abs(s) <= 0.01:
-                    return True
+        for s in all_stat_numbers:
+            if abs(v - s) / abs(s) <= 0.01:
+                return True
         return False
 
     def _validate_visuals(self, visualizations, all_stats):
         """Filter out visualizations that fail basic quality checks.
-        Rules: 2+ data points, not all zeros, 50%+ values match real stats."""
-        valid = []
+        Strips individual fabricated data points, then checks remaining quality.
+        Falls back to lighter checks if strict validation kills everything."""
+        # Pre-extract all numeric values from raw stats for efficient matching
+        all_numbers = set()
+        for stat in all_stats:
+            all_numbers.update(self._extract_numbers(stat))
+
+        strict_valid = []
+        light_valid = []
         for vis in visualizations:
-            points = vis.get("data_points", [])
-            # Rule 1: need at least 2 data points
-            if len(points) < 2:
+            original_points = vis.get("data_points", [])
+            if not original_points:
                 continue
-            values = []
-            for p in points:
+
+            # Light validation: 2+ non-zero data points (no stat matching)
+            light_values = []
+            for p in original_points:
                 try:
-                    values.append(float(p.get("value", 0)))
+                    light_values.append(float(p.get("value", 0)))
                 except (TypeError, ValueError):
-                    values.append(0)
-            # Rule 2: not all zeros
-            if all(v == 0 for v in values):
-                continue
-            # Rule 3: at least 50% of values match a real extracted stat
-            if all_stats:
-                match_count = sum(1 for v in values if self._matches_any_stat(v, all_stats))
-                if match_count / len(values) < 0.5:
-                    continue
-            valid.append(vis)
-        return valid
+                    light_values.append(0)
+            if len(original_points) >= 2 and not all(v == 0 for v in light_values):
+                light_valid.append(vis)
+
+            # Strict validation: strip points that don't match real stats
+            if all_numbers:
+                verified_points = []
+                for p in original_points:
+                    try:
+                        v = float(p.get("value", 0))
+                    except (TypeError, ValueError):
+                        continue
+                    if v == 0:
+                        continue
+                    if self._matches_any_stat(v, all_numbers):
+                        verified_points.append(p)
+                if len(verified_points) >= 2:
+                    vis_copy = dict(vis)
+                    vis_copy["data_points"] = verified_points
+                    strict_valid.append(vis_copy)
+            else:
+                # No stats to check against — pass through light validation
+                if vis in light_valid:
+                    strict_valid.append(vis)
+
+        # If strict validation killed everything but light found some, fall back
+        if not strict_valid and light_valid:
+            return light_valid
+        return strict_valid
 
     def _fix_qmd(self, content):
+        # Strip unresolved bracketed placeholders like [specific date], [city name], etc.
+        content = re.sub(r'\[specific \w+(?:\s+\w+)*\]', '', content)
+        content = re.sub(r'\[insert \w+(?:\s+\w+)*\]', '', content)
+        # Strip orphaned units where the LLM left the unit but no number
+        # e.g. "with % of" → "", "beyond weeks" → "", "approximately %" → ""
+        content = re.sub(r'\bwith %\b', '', content)
+        content = re.sub(r'\bapproximately %\b', '', content)
+        content = re.sub(r'\babout %\b', '', content)
+        content = re.sub(r'\b(\d+\s+)?% of individuals', lambda m: m.group(0) if m.group(1) else 'individuals', content)
+        content = re.sub(r'\bbeyond \w+ (days|weeks|months|years)\b', '', content)
+        content = re.sub(r'\bover \w+ (days|weeks|months|years)\b', lambda m: m.group(0) if m.group(0).split()[1].replace(',','').isdigit() else '', content)
+        # Clean up leftover artifacts: "As of , " → removed, inline double spaces
+        content = re.sub(r'\b(As of|In|On|By)\s*,\s', '', content)
+        content = re.sub(r'(?<=\S)  +', ' ', content)
+        # Clean up sentences that became empty or broken after stripping
+        content = re.sub(r',\s*,', ',', content)
+        content = re.sub(r'\s+\.', '.', content)
         # Ensure frontmatter delimiters exist
         if not content.startswith("---"):
             lines = content.split("\n")
@@ -152,7 +211,11 @@ execute:
         # Executive Summary
         sections.append(self._generate_section(
             f"Write ## Executive Summary. Expand this into {self.config.get('exec_summary', '3-4 paragraphs')}. "
-            "Each paragraph should be 4-5 sentences with specific numbers, dates, and entity names.",
+            "Each paragraph should be 3-4 sentences MAX with specific numbers, dates, and entity names. "
+            "Do NOT exceed the paragraph limit. "
+            "NEVER output bracketed placeholders like [specific date] — omit the phrase if the value is unknown. "
+            "CRITICAL: Only state what the data says — NEVER invert findings or guess missing numbers. "
+            "If a number is missing, omit the claim entirely rather than writing a bare % or placeholder.",
             {"executive_summary": synthesis.get("executive_summary", ""), "narrative_frame": synthesis.get("narrative_frame", "")},
             depth
         ))
@@ -265,8 +328,9 @@ execute:
             source_clusters = synthesis.get("source_clusters", [])
             if source_clusters:
                 sections.append(self._generate_section(
-                    "Write ## Source Connections. For each cluster, create a ### subsection explaining "
-                    "the relationship, writing each comparison point as a full paragraph, referencing sources by name.",
+                    "Write ## Source Connections. For each cluster, create a ### subsection. "
+                    "Open with 1-2 sentences explaining the relationship, then use bullet points for each comparison point. "
+                    "Reference sources by name. STOP when out of comparison points — do NOT pad with general commentary.",
                     {"source_clusters": source_clusters},
                     depth
                 ))
@@ -297,7 +361,8 @@ execute:
         takeaways = takeaways[:max_takeaways]
         if takeaways:
             sections.append(self._generate_section(
-                "Write ## Key Takeaways as a numbered list. Expand each takeaway into 1-2 sentences with specific data points.",
+                "Write ## Key Takeaways as a numbered list. Expand each takeaway into 1-2 sentences with specific data points. "
+                "Restate insights in NEW words — do NOT copy sentences verbatim from earlier sections.",
                 {"key_takeaways": takeaways},
                 depth
             ))

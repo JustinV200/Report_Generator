@@ -114,6 +114,8 @@ RULES:
 - For each theme that contains comparable numeric data, prefer including a visualization. It is better to produce a chart that gets filtered downstream than to skip chartable data entirely
 - Every visualization data_point.value MUST be an exact number from the source analyses — do NOT invent, estimate, or fabricate values. If no real numbers exist for a chart, omit it
 - If the source data lacks enough real numbers for a visualization, set visualizations to an empty list [] rather than inventing data
+- NEVER pad a visualization with made-up data points to reach a minimum count — only include data points backed by real extracted numbers
+- NEVER invert or contradict what the data says — if source data says X > Y, the visualization must reflect that
 - Order the narrative logically: most important themes first, supporting detail after
 - If there is only one source, still produce themes and takeaways — set cross_source_findings and source_clusters to empty lists []
 - Each key_takeaway must be a full sentence with specific data points, not a vague summary
