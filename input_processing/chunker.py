@@ -1,6 +1,10 @@
+"""Chunker — splits parsed document text and tables into overlapping chunks for extraction."""
+
 import json
 
+
 def chunker(parsed_data, chunk_size=1000, overlap=150):
+    """Split parsed text into word-limited chunks with overlap; tables become separate chunks."""
     text = parsed_data.get("text", "")
     tables = parsed_data.get("tables", [])
     metadata = parsed_data.get("metadata", {})

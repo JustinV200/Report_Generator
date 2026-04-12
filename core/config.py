@@ -1,8 +1,8 @@
-# Mode configuration — controls how much detail each pipeline stage produces.
-# Each mode returns a dict consumed by the analyzer and report generator.
-# Values scale with num_sources so reports stay proportional.
+"""Mode configuration — controls how much detail each pipeline stage produces."""
+
 
 def get_mode_config(mode, num_sources):
+    """Return a config dict for the given mode, scaled by *num_sources*."""
     base = {
         "brief": {
             "insights_per_source": 2,

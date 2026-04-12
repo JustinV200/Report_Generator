@@ -1,3 +1,5 @@
+"""Entry point for the ReGen report generator."""
+
 from dotenv import load_dotenv
 load_dotenv()
 

@@ -1,3 +1,5 @@
+"""Map-reduce extractor — extracts structured info from chunks, then consolidates via recursive reduce."""
+
 import json
 from models import Model
 from prompts.extraction import EXTRACT_PROMPT, TABLE_PROMPT, REDUCE_PROMPT
@@ -7,14 +9,16 @@ from prompts.extraction import EXTRACT_PROMPT, TABLE_PROMPT, REDUCE_PROMPT
 #final reduce consolidates everything into one extraction, this way LLM gets full document context since the compressed extractions now fit within the token limit
 #and we can handle arbitrarily long documents without losing key info or context
 class Extractor:
+    """Extract and consolidate key information from document chunks using an LLM."""
+
     def __init__(self, model=None, max_tokens=2000, verbose=False):
         self.model = model or Model()
         self.max_tokens = max_tokens
         self.verbose = verbose
 
 
-    # handline individual chunk
     def extract_chunk(self, chunk):
+        """Send a single chunk to the LLM and return the structured extraction."""
         if chunk["chunk_type"] == "table":
             prompt = TABLE_PROMPT + json.dumps(chunk["content"])
         else:
@@ -22,8 +26,8 @@ class Extractor:
         return self.model.call(prompt)
     
 
-    #go through all chunks, extract info, then reduce results
     def extract_all(self, chunks):
+        """Run extract_chunk on every chunk and return the list of extractions."""
         extractions = []
         for i, chunk in enumerate(chunks, 1):
             if self.verbose:
@@ -48,8 +52,8 @@ class Extractor:
                 else:
                     raise
 
-    #final run through of everything, reduce document and get the final key information
     def reduce(self, extractions):
+        """Recursively merge extractions until they fit in a single LLM call."""
         text = json.dumps(extractions, indent=2)
 
         # if it fits, do the final reduce in one call
@@ -88,6 +92,7 @@ class Extractor:
         return self.reduce(reduced)
 
     def run(self, chunks):
+        """Execute the full map-reduce pipeline: extract all chunks, then reduce."""
         extractions = self.extract_all(chunks)  # map
         if self.verbose:
             print(f"  Reducing {len(extractions)} extractions...")

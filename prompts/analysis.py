@@ -1,3 +1,5 @@
+"""Prompt templates for the analysis stage (per-source, clustering, synthesis)."""
+
 # Prompts for the analysis stage (analyzer/analyzer.py)
 # Three-step pipeline: per-source analysis → source clustering → cross-source synthesis.
 # The synthesis output is the "blueprint" that the report writer formats into a .qmd.

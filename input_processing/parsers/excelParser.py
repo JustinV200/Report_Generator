@@ -1,6 +1,10 @@
+"""Excel parser — reads all sheets into text and table representations."""
+
 import pandas as pd
 
+
 def excelParser(file_path):
+    """Parse an Excel file and return combined text, per-sheet tables, and metadata."""
     sheets = pd.read_excel(file_path, sheet_name=None)  # dict of {sheet_name: DataFrame}
     text = ""
     tables = []

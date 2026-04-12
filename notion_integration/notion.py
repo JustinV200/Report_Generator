@@ -1,3 +1,5 @@
+"""Notion API integration — push report summaries and full analyses to a Notion database."""
+
 import requests
 from dotenv import load_dotenv
 import os

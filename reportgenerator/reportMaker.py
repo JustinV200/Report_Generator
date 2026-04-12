@@ -1,3 +1,5 @@
+"""Report generator — converts analysis JSON into a validated Quarto .qmd document."""
+
 import json
 import os
 import re
@@ -9,6 +11,8 @@ from prompts.report import (
 
 
 class reportMaker:
+    """Generate Quarto .qmd reports with chart validation and post-processing."""
+
     def __init__(self, model=None, output_dir="reports", config=None):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -106,6 +110,7 @@ class reportMaker:
         return strict_valid
 
     def _fix_qmd(self, content):
+        """Post-process QMD content: strip placeholders, orphaned units, and formatting artifacts."""
         # Strip unresolved bracketed placeholders like [specific date], [city name], etc.
         content = re.sub(r'\[specific \w+(?:\s+\w+)*\]', '', content)
         content = re.sub(r'\[insert \w+(?:\s+\w+)*\]', '', content)
@@ -135,6 +140,7 @@ class reportMaker:
         return content
 
     def _build_frontmatter(self, analysis, output_format):
+        """Build the YAML frontmatter block for the Quarto document."""
         title = analysis.get("synthesis", {}).get("title", "Report")
         return f"""---
 title: "{title}"
@@ -154,6 +160,7 @@ execute:
 """
 
     def _generate_section(self, instruction, data, depth):
+        """Generate a single report section via LLM using the given instruction and data."""
         prompt = SECTION_PROMPT.format(
             section_depth=depth,
             section_instruction=instruction,
@@ -370,6 +377,7 @@ execute:
         return "\n\n".join(sections)
 
     def generate(self, analysis, report_name="report", output_format="html"):
+        """Generate the full .qmd report file and return its path."""
         if self.config.get("sectioned_generation", False):
             # Multi-page: section-by-section to avoid output token limits
             qmd_content = self._fix_qmd(self._generate_sectioned(analysis, output_format))

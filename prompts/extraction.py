@@ -1,3 +1,5 @@
+"""Prompt templates for the extraction stage (map-reduce pipeline)."""
+
 # Prompts for the extraction stage (extractor/extractor.py)
 # These handle the map-reduce pipeline: each chunk gets individually extracted,
 # then results are consolidated via reduce into one extraction per source.

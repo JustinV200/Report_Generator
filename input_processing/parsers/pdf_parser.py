@@ -1,7 +1,11 @@
+"""PDF parser — extracts text with PyMuPDF and tables with pdfplumber."""
+
 import fitz
 import pdfplumber
 
+
 def pdfParser(file_path):
+    """Extract text, tables, and page/table counts from a PDF file."""
     doc = fitz.open(file_path)
     text = ""
     for page in doc:

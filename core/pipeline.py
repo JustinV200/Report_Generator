@@ -1,5 +1,4 @@
-# Main pipeline orchestration — wires together all stages:
-# input parsing → extraction → analysis → report generation → optional render.
+"""Main pipeline orchestration — input parsing → extraction → analysis → report generation → optional render."""
 
 import subprocess
 import sys
@@ -15,6 +14,7 @@ from core.cli import parse_args, resolve_sources, log
 
 
 def main():
+    """Run the full ReGen pipeline from CLI arguments to final report."""
     args = parse_args()
 
     if args.verbose and args.quiet:

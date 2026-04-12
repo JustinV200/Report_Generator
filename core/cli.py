@@ -1,10 +1,11 @@
-# CLI argument parsing and helper utilities.
+"""CLI argument parsing and helper utilities for ReGen."""
 
 import argparse
 import os
 
 
 def parse_args():
+    """Parse command-line arguments and return the argparse Namespace."""
     parser = argparse.ArgumentParser(
         prog="regen",
         description="ReGen: AI-powered report generator"

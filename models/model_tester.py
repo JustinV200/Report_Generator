@@ -1,3 +1,5 @@
+"""Quick smoke test for the Model JSON-call interface."""
+
 # test_api.py
 from dotenv import load_dotenv
 load_dotenv()

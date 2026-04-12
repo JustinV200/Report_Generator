@@ -1,3 +1,5 @@
+"""Analyzer — interprets extractions, clusters sources, and synthesizes cross-source insights."""
+
 import json
 
 from models import Model
@@ -5,20 +7,25 @@ from prompts.analysis import ANALYZE_PROMPT, CLUSTER_PROMPT, SYNTHESIZE_PROMPT
 
 
 class Analyzer:
+    """Analyze per-source extractions, cluster related sources, and synthesize themes."""
+
     def __init__(self, model=None, config=None):
         self.model = model or Model()
         self.config = config or {}
 
     def analyze(self, source_extraction):
+        """Produce an interpretive analysis for a single source extraction."""
         prompt = ANALYZE_PROMPT.replace(
             "{insights_per_source}", str(self.config.get("insights_per_source", 5))
         )
         return self.model.call(prompt + json.dumps(source_extraction, indent=2))
 
     def cluster(self, analyses):
+        """Identify clusters of related sources from their analyses."""
         return self.model.call(CLUSTER_PROMPT + json.dumps(analyses, indent=2))
 
     def synthesize(self, analyses, clusters):
+        """Merge per-source analyses and clusters into a unified report blueprint."""
         include_clusters = self.config.get("include_clusters", False)
         cluster_threshold = self.config.get("cluster_threshold", "high")
         include_cross = self.config.get("include_cross_source", True)
@@ -125,6 +132,7 @@ class Analyzer:
         return self.synthesize(wrapped, clusters)
 
     def run(self, extractions):
+        """Run the full analysis pipeline: per-source → clustering → synthesis."""
         # Phase 1: per-source analysis
         analyses = [self.analyze(ext) for ext in extractions]
 

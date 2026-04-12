@@ -1,3 +1,5 @@
+"""Prompt templates for the report generation stage (single-call and sectioned modes)."""
+
 # Prompts for the report generation stage (reportgenerator/reportMaker.py)
 #
 # Two generation modes:

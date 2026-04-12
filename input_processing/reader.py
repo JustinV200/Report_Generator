@@ -1,3 +1,5 @@
+"""Reader — detects source type (URL or file), downloads if needed, and dispatches to the appropriate parser."""
+
 import mimetypes
 import os
 import tempfile
@@ -12,6 +14,8 @@ from .parsers.excelParser import excelParser
 from .chunker import chunker
 
 class Reader:
+    """Read a source (URL or local file), detect its type, parse it, and chunk the result."""
+
     def __init__(self, source):
 
         #initial input, either a url or a file
@@ -35,10 +39,12 @@ class Reader:
 
 
     def is_url(self):
+        """Return True if the source looks like an HTTP(S) URL."""
         #is it a url? check if it starts with http:// or https://
         return self.source.startswith("http://") or self.source.startswith("https://")
     
     def download_url(self):
+        """Download the URL to a temporary file and return its path."""
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
         }
@@ -57,10 +63,12 @@ class Reader:
         return tmp.name
 
     def getFileType(self):
+        """Detect the MIME type of the local file using python-magic."""
         mime = magic.from_file(self.file, mime=True)
         return mime
     
     def parse(self):
+        """Dispatch to the correct parser based on MIME type and return parsed data."""
         if self.fileType in ["text/plain"]:
             return textParser(self.file)
         elif self.fileType in ["text/csv"]:
