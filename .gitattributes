@@ -1,0 +1,4 @@
+# Ignore generated/vendor HTML
+docs/** linguist-vendored
+build/** linguist-generated
+*.html linguist-detectable=false
