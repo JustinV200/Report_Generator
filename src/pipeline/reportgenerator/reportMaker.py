@@ -3,7 +3,8 @@
 import json
 import os
 import re
-from datetime import date
+import shutil
+from datetime import date, datetime
 from prompts.report import (
     REPORT_PROMPT, SECTION_PROMPT,
     PER_SOURCE_SECTION, CLUSTER_SECTION, CROSS_SOURCE_SECTION,
@@ -200,8 +201,13 @@ execute:
         ) + json.dumps(analysis, indent=2)
         return self.model.call_raw(prompt)
 
-    def _generate_sectioned(self, analysis, output_format):
-        """Section-by-section generation for detailed mode — avoids hitting output token limits."""
+    def _generate_sectioned(self, analysis, output_format, track_map=False):
+        """Section-by-section generation for detailed mode — avoids hitting output token limits.
+
+        When track_map=True, also returns a section_map describing which slice
+        of analysis data produced each section. The ReportEditor uses this to
+        regenerate specific sections without replaying the entire pipeline.
+        """
         depth = self.config.get("section_depth", "2-3 paragraphs per point with examples, context, and implications")
         synthesis = analysis.get("synthesis", {})
         per_source = analysis.get("per_source", [])
@@ -374,19 +380,90 @@ execute:
                 depth
             ))
 
-        return "\n\n".join(sections)
+        qmd = "\n\n".join(sections)
+        if not track_map:
+            return qmd
 
-    def generate(self, analysis, report_name="report", output_format="html"):
-        """Generate the full .qmd report file and return its path."""
+        # Build a best-effort section → analysis-data mapping so the editor
+        # can regenerate individual sections without resending the whole blob.
+        # Keys are the ## headers produced above; values are dotted paths into
+        # the persisted analysis JSON (which ReportEditor resolves at read-time).
+        theme_names = [t.get("theme", "") for t in themes]
+        section_map = {
+            "Executive Summary": {"path": "synthesis.executive_summary"},
+        }
+        if self.config.get("include_per_source_sections", False) and per_source:
+            section_map["Source Deep-Dives"] = {"path": "per_source"}
+        for i, name in enumerate(theme_names):
+            if name:
+                section_map[name] = {"path": f"synthesis.themes[{i}]"}
+        if self.config.get("include_clusters", False) and analysis.get("clusters"):
+            section_map["Source Connections"] = {"path": "synthesis.source_clusters"}
+        if self.config.get("include_cross_source", True) and synthesis.get("cross_source_findings"):
+            section_map["Cross-Source Findings"] = {"path": "synthesis.cross_source_findings"}
+        if remaining_visuals:
+            section_map["Additional Visualizations"] = {"path": "synthesis.visualizations"}
+        if takeaways:
+            section_map["Key Takeaways"] = {"path": "synthesis.key_takeaways"}
+
+        return qmd, section_map
+
+    def generate(self, analysis, report_name="report", output_format="html", extractions=None, manifest_extras=None):
+        """Generate the full .qmd report file and return its path.
+
+        Creates a run directory (reports/<report_name>/) containing:
+          - report.qmd            the document itself
+          - analysis.json         the synthesis blueprint
+          - extractions.json      per-source extractions (if provided)
+          - section_map.json      section title → analysis data slice mapping
+          - manifest.json         run metadata (sources, model, mode, timestamps)
+          - versions/report.v0.qmd  snapshot of the original for rollback
+
+        The run directory is what `ReportEditor` consumes for interactive edits.
+        """
+        run_dir = os.path.join(self.output_dir, report_name)
+        os.makedirs(run_dir, exist_ok=True)
+        os.makedirs(os.path.join(run_dir, "versions"), exist_ok=True)
+
+        # Build the document. Sectioned mode also produces a section_map so the
+        # editor knows which data slice fed each section.
+        section_map = {}
         if self.config.get("sectioned_generation", False):
-            # Multi-page: section-by-section to avoid output token limits
-            qmd_content = self._fix_qmd(self._generate_sectioned(analysis, output_format))
+            qmd_content, section_map = self._generate_sectioned(analysis, output_format, track_map=True)
         else:
-            # Brief: single call
-            qmd_content = self._fix_qmd(self._generate_single_call(analysis, output_format))
+            qmd_content = self._generate_single_call(analysis, output_format)
+        qmd_content = self._fix_qmd(qmd_content)
 
-        output_path = os.path.join(self.output_dir, f"{report_name}.qmd")
+        # Persist all artifacts.
+        output_path = os.path.join(run_dir, "report.qmd")
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(qmd_content)
-        
+
+        # Original version snapshot.
+        shutil.copy(output_path, os.path.join(run_dir, "versions", "report.v0.qmd"))
+
+        # Strip transient fields before persisting analysis.
+        persisted_analysis = {k: v for k, v in analysis.items() if not k.startswith("_")}
+        persisted_analysis["_raw_stats"] = analysis.get("_raw_stats", [])
+        self._save_json(run_dir, "analysis.json", persisted_analysis)
+        if extractions is not None:
+            self._save_json(run_dir, "extractions.json", extractions)
+        self._save_json(run_dir, "section_map.json", section_map)
+
+        manifest = {
+            "report_name": report_name,
+            "output_format": output_format,
+            "created": datetime.now().isoformat(),
+            "edit_history": [],
+        }
+        if manifest_extras:
+            manifest.update(manifest_extras)
+        self._save_json(run_dir, "manifest.json", manifest)
+
         return output_path
+
+    @staticmethod
+    def _save_json(run_dir, name, data):
+        """Write a JSON artifact into the run directory."""
+        with open(os.path.join(run_dir, name), "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, default=str)

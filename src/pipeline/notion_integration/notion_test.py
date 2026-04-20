@@ -6,7 +6,7 @@ Requires push_to_notion from notion.py
 """
 import requests
 
-from notion import push_to_notion, push_analysis_to_notion
+from pipeline.notion_integration.notion import push_to_notion, push_analysis_to_notion
 
 '''    Fake data for testing     '''
 

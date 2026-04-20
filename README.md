@@ -156,6 +156,7 @@ report_generator/
 - [x] Section-by-section generation — avoids LLM output token limits on longer reports
 - [x] Self-contained HTML — `embed-resources` for portable single-file reports
 - [x] **CLI interface** — argparse-based CLI with sources, mode, output format, render, verbose/quiet flags
-- [] Image handling
+- [ ] Image handling
+- [x] **Edit Mode** Agent that will reference saved JSONS from the development process and edit the final report by user request
 - [ ] **Local fine-tuned models** — swap cloud LLMs for locally-hosted models for cost, privacy, and offline use
 - [ ] **Research mode** — given a topic, auto-search the web for relevant sources and feed the best ones into the pipeline --optional

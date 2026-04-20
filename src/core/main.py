@@ -1,22 +1,32 @@
 """Main pipeline orchestration — input parsing → extraction → analysis → report generation → optional render."""
 
+import os
 import subprocess
 import sys
 
-from input_processing import Reader, chunker
+from pipeline.input_processing import chunker
 from models import Model
-from extractor import Extractor
-from analyzer import Analyzer
-from reportgenerator import reportMaker
+from pipeline.extractor import Extractor
+from pipeline.analyzer import Analyzer
+from pipeline.reportgenerator import reportMaker
+from pipeline.reporteditor import ReportEditor
 
 from config import get_mode_config
 from core.cli import parse_args, resolve_sources, log
+from pipeline.input_processing import Reader
 
 
 def main():
-    """Run the full ReGen pipeline from CLI arguments to final report."""
+    """Dispatch to the generate pipeline or the edit agent based on CLI args."""
     args = parse_args()
 
+    if getattr(args, "command", "generate") == "edit":
+        return _run_edit(args)
+    return _run_generate(args)
+
+
+def _run_generate(args):
+    """Run the full ReGen pipeline from CLI arguments to final report."""
     if args.verbose and args.quiet:
         print("Error: --verbose and --quiet cannot be used together.", file=sys.stderr)
         sys.exit(1)
@@ -86,7 +96,17 @@ def main():
     # Use the analysis to generate a report, save to disk, and optionally render with Quarto
     log("Generating report...", args.quiet)
     report = reportMaker(model=model, config=config)
-    report_path = report.generate(analysis, report_name=args.name, output_format=args.output)
+    report_path = report.generate(
+        analysis,
+        report_name=args.name,
+        output_format=args.output,
+        extractions=extractions,
+        manifest_extras={
+            "sources": sources,
+            "model": args.model,
+            "mode": mode,
+        },
+    )
     log(f"Report saved to: {report_path}", args.quiet)
 
     # Render with Quarto if requested
@@ -106,3 +126,71 @@ def main():
             sys.exit(1)
     elif not args.quiet:
         print(f"\nRun 'quarto render {report_path}' to render the report.")
+
+
+def _run_edit(args):
+    """Open an existing run and apply one or more edits via the agent."""
+    run_dir = os.path.join("reports", args.run_name)
+    if not os.path.isdir(run_dir):
+        print(f"Error: run directory not found: {run_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    qmd_path = os.path.join(run_dir, "report.qmd")
+    if not os.path.exists(qmd_path):
+        print(f"Error: {qmd_path} not found — was this run created by an older version?", file=sys.stderr)
+        sys.exit(1)
+
+    model = Model(model_name=args.model)
+    # Use a light config derived from --mode. num_sources is unknown here and
+    # only affects a couple of scaling limits that ReportEditor uses for
+    # section depth and theme/takeaway caps during reanalyze.
+    config = get_mode_config(args.mode, 1)
+    editor = ReportEditor(run_dir, model=model, config=config, verbose=args.verbose)
+
+    interactive = args.interactive or not args.request
+
+    def _apply(request):
+        """Run one editor query and surface the result to the user."""
+        response = editor.query(request)
+        if response.kind == "followup":
+            print(f"? {response.message}")
+        elif response.kind == "refused":
+            print(f"! {response.message}")
+        elif response.kind == "applied":
+            print(f"✓ Applied: {', '.join(response.actions_applied)}")
+            if args.verbose and response.message:
+                print(f"  ({response.message})")
+        else:
+            print(f"  {response.message or 'No changes applied.'}")
+        return response
+
+    if interactive:
+        if not args.quiet:
+            print(f"Editing {run_dir}. Type 'quit' or empty line to exit.")
+        last_followup = False
+        while True:
+            try:
+                prompt = "followup> " if last_followup else "> "
+                req = input(prompt).strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                break
+            if not req or req.lower() in ("quit", "exit"):
+                break
+            response = _apply(req)
+            last_followup = response.kind == "followup"
+    else:
+        _apply(args.request)
+
+    if args.render:
+        log("Rendering with Quarto...", args.quiet)
+        result = subprocess.run(
+            ["quarto", "render", qmd_path],
+            capture_output=args.quiet,
+        )
+        if result.returncode == 0:
+            rendered = qmd_path.replace(".qmd", f".{args.output}")
+            print(rendered)
+        else:
+            print(f"Quarto render failed (exit code {result.returncode})", file=sys.stderr)
+            sys.exit(1)
