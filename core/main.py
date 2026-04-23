@@ -2,11 +2,13 @@
 
 import subprocess
 import sys
+import os
 
 from input_processing import Reader, chunker
 from models import Model
 from extractor import Extractor
 from analyzer import Analyzer
+from notion_integration.notion import push_analysis_to_notion
 from reportgenerator import reportMaker
 
 from config import get_mode_config
@@ -106,3 +108,22 @@ def main():
             sys.exit(1)
     elif not args.quiet:
         print(f"\nRun 'quarto render {report_path}' to render the report.")
+
+    if args.notion:
+        md_path = os.path.splitext(report_path)[0] + ".md"
+        # Skip re-render if --render already produced the .md
+        if not (args.render and args.output == "md"):
+            try:
+                subprocess.run(
+                    ["quarto", "render", report_path, "--to", "md",
+                     "--output", os.path.basename(md_path)],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    shell=True,
+                )
+
+            except subprocess.CalledProcessError as e:
+                print(f"Quarto markdown render failed: {e.stderr}", file=sys.stderr)
+                sys.exit(1)
+        push_analysis_to_notion(md_path)

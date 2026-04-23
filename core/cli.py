@@ -50,6 +50,11 @@ def parse_args():
         "-q", "--quiet", action="store_true", default=False,
         help="Suppress all output except errors and final report path"
     )
+    # mode to export report to notion
+    parser.add_argument(
+        "-n", "--notion", action="store_true", default=False,
+        help="Send the reports to a specified Notion Database"
+    )
     return parser.parse_args()
 
 
