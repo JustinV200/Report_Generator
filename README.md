@@ -109,6 +109,7 @@ python ReGen.py https://example.com -q --render
 | `--render` | Auto-render the `.qmd` with Quarto after generation | off |
 | `-v`, `--verbose` | Show chunk-level extraction and reduce progress | off |
 | `-q`, `--quiet` | Suppress all output except errors and final path | off |
+| `-n`, `--notion` | Convert the report to `.md` and export to Notion Database | off |
 
 **Modes:**
 
