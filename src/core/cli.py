@@ -66,12 +66,16 @@ def _parse_generate(argv):
         help="Auto-render the .qmd with Quarto after generation"
     )
     parser.add_argument(
-        "--verbose", action="store_true", default=False,
+        "--verbose", action="store_true", default=True,
         help="Show detailed progress (chunk-level extraction, reduce steps)"
     )
     parser.add_argument(
         "-q", "--quiet", action="store_true", default=False,
         help="Suppress all output except errors and final report path"
+    )
+    parser.add_argument(
+        "-n", "--notion", action="store_true", default=False,
+        help="Push report to Notion (requires NOTION_TOKEN env var)"
     )
     return parser.parse_args(argv)
 
@@ -102,6 +106,8 @@ def _parse_subcommand(name, argv):
                             help="Show detailed progress")
         parser.add_argument("-q", "--quiet", action="store_true", default=False,
                             help="Suppress all output except errors and final report path")
+        parser.add_argument("-n", "--notion", action="store_true", default=False,
+                            help="Push updated report to Notion (requires NOTION_TOKEN env var)")
         return parser.parse_args(argv)
     raise ValueError(f"Unknown subcommand: {name}")
 

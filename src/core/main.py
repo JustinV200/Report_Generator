@@ -3,17 +3,18 @@
 import subprocess
 import sys
 import os
+import shutil
 
-from input_processing import Reader, chunker
+from pipeline.input_processing import Reader, chunker
 from models import Model
 from pipeline.extractor import Extractor
 from pipeline.analyzer import Analyzer
 from pipeline.reportgenerator import reportMaker
 from pipeline.reporteditor import ReportEditor
-from extractor import Extractor
-from analyzer import Analyzer
-from notion_integration.notion import push_analysis_to_notion
-from reportgenerator import reportMaker
+from pipeline.extractor import Extractor
+from pipeline.analyzer import Analyzer
+from pipeline.notion_integration.notion import push_analysis_to_notion
+from pipeline.reportgenerator import reportMaker
 
 from config import get_mode_config
 from core.cli import parse_args, resolve_sources, log
@@ -131,6 +132,32 @@ def _run_generate(args):
         print(f"\nRun 'quarto render {report_path}' to render the report.")
 
 
+    if args.notion:
+        md_path = os.path.splitext(report_path)[0] + ".md"
+        # Skip re-render if --render already produced the .md
+        if not (args.render and args.output == "md"):
+            try:
+                print("Exporting report to Markdown for Notion upload...")
+                quarto = shutil.which("quarto")
+                subprocess.run(
+                    [quarto, "render", report_path, "--to", "md"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+
+            except subprocess.CalledProcessError as e:
+                print(f"Quarto markdown render failed:\nstdout: {e.stdout}\nstderr: {e.stderr}",
+                    file=sys.stderr)
+                sys.exit(1)
+
+            if not os.path.exists(md_path):
+                print(f"Quarto reported success but {md_path} was not created.", file=sys.stderr)
+                sys.exit(1)
+        print("Pushing report to Notion...")
+        push_analysis_to_notion(md_path)
+
+
 def _run_edit(args):
     """Open an existing run and apply one or more edits via the agent."""
     run_dir = os.path.join("reports", args.run_name)
@@ -202,12 +229,13 @@ def _run_edit(args):
             sys.exit(1)
 
     if args.notion:
-        md_path = os.path.splitext(report_path)[0] + ".md"
+        md_path = os.path.splitext(qmd_path)[0] + ".md"
         # Skip re-render if --render already produced the .md
         if not (args.render and args.output == "md"):
             try:
+                print("Exporting report to Markdown for Notion upload...", args.quiet)
                 subprocess.run(
-                    ["quarto", "render", report_path, "--to", "md",
+                    ["quarto", "render", qmd_path, "--to", "md",
                      "--output", os.path.basename(md_path)],
                     check=True,
                     capture_output=True,
@@ -218,4 +246,5 @@ def _run_edit(args):
             except subprocess.CalledProcessError as e:
                 print(f"Quarto markdown render failed: {e.stderr}", file=sys.stderr)
                 sys.exit(1)
+        print("Pushing report to Notion...", args.quiet)
         push_analysis_to_notion(md_path)
